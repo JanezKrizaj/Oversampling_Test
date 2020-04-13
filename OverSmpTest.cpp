@@ -7,7 +7,8 @@ OverSmpTest::OverSmpTest(const InstanceInfo& info)
 {
     GetParam(kMix)->InitDouble("Mix", 50., 0., 100., 1., "%");
     GetParam(kPhase)->InitInt("Flip", 0, 0, 1, "∅");
-    GetParam(kDelay)->InitInt("Delay", 0, 0, 7, "smp");
+    GetParam(kDelay)->InitInt("Delay", 0, 0, 6, "smp");
+    GetParam(kFdelay)->InitDouble("Fine", 50., 0., 100., 1, "%");
     GetParam(kOverSampling)->InitEnum("Oversample", 0, 5, "", 0, "", OVERSAMPLING_FACTORS_VA_LIST);
 #if IPLUG_EDITOR // http://bit.ly/2S64BDd
     mMakeGraphicsFunc = [&]() {
@@ -24,6 +25,7 @@ OverSmpTest::OverSmpTest(const InstanceInfo& info)
         pGraphics->AttachControl(new IVRadioButtonControl(b.GetCentredInside(100).GetHShifted(50).GetVShifted(-50), kPhase));
         
         pGraphics->AttachControl(new IVKnobControl(b.GetCentredInside(100).GetHShifted(-50).GetVShifted(50), kDelay));
+        pGraphics->AttachControl(new IVKnobControl(b.GetCentredInside(100).GetHShifted(-50).GetVShifted(150), kFdelay));
         pGraphics->AttachControl(new IVRadioButtonControl(b.GetCentredInside(100).GetHShifted(50).GetVShifted(50), kOverSampling));
     };
 #endif
@@ -44,9 +46,10 @@ void OverSmpTest::ProcessBlock(sample** inputs, sample** outputs, int nFrames)
         procs[1][0] = inputs[1][s];
         
         outputs[0][s] = mix * (mOverSampL.Process(inputs[0][s], [](sample input) {return input;}))
-        + (1. - mix) * procs[0][delay] * (double)phase;
+        + (1. - mix) * ((1. - fdelay) * procs[0][delay] + fdelay * procs[0][delay + 1]) * (double)phase;
+        
         outputs[1][s] = mix * (mOverSampR.Process(inputs[1][s], [](sample input) {return input;}))
-        + (1. - mix) * procs[1][delay] * (double)phase;
+        + (1. - mix) * ((1. - fdelay) * procs[1][delay] + fdelay * procs[1][delay + 1]) * (double)phase;
         
         //buffer filler
         for (int i = 0; i < 7; i++) {
@@ -78,6 +81,9 @@ void OverSmpTest::OnParamChange(int paramIdx, EParamSource, int sampleOffset)
             break;
         case kDelay:
             delay = GetParam(kDelay)->Value();
+            break;
+        case kFdelay:
+            fdelay = GetParam(kFdelay)->Value() * 0.01;
             break;
             
         default:

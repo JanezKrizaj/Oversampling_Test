@@ -10,6 +10,7 @@ enum EParams
     kPhase,
     kOverSampling,
     kDelay,
+    kFdelay,
     kNumParams
 };
 
@@ -30,7 +31,7 @@ private:
     bool mFactorChanged = true;
     OverSampler <sample> mOverSampL {kNone, true, 1};
     OverSampler <sample> mOverSampR {kNone, true, 1}; // init with no upsampling, block processing, mono
-    double mix;
+    double mix, fdelay;
     int delay, phase;
       double procs[2][8];
 #endif
